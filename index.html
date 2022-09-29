@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <style>
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+
+        .info {
+            padding: 6px 8px;
+            font: 14px/16px Arial, Helvetica, sans-serif;
+            background: white;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+
+        .info h4 {
+            margin: 0 0 5px;
+            color: #777;
+        }
+
+        .legend {
+            line-height: 18px;
+            color: #555;
+        }
+
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+
+        .leaflet-popup-content-wrapper {
+            width: 200px;
+            height: 200px;
+            font-size: 2rem;
+        }
+
+        .leaflet-popup-content {
+            width: 200px !important;
+        }
+
+        .leaflet-control-layers-toggle {
+            height: 100px !important;
+            width: 100px !important;
+        }
+
+        .leaflet-control-layers-list {
+            font-size: 2rem !important;
+        }
+
+        .leaflet-control-geocoder-icon {
+            width: 100px !important;
+            height: 60px !important;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div id="map"></div>
+</body>
+
+</html>
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="./data/line.js"></script>
+<script src="./data/point.js"></script>
+<script src="./data/polygon.js"></script>
+<!-- <script src="./data/nepaldata.js"></script> -->
+<script src="./data/bridge.js"></script>
+<script src="./data/itbaria_plot.js"></script>
+<script src="./data/itbariaPoly.js"></script>
+<script src="./data/fullItbaria.js"></script>
+<script src="./data/itbaria_plot_2.js"></script>
+<script src="./data/itbaria_plot_3.js"></script>
+<script src="./data/itbaria_plot_3_poly.js"></script>
+<script src="./data/lineGDB.js"></script>
+<script src="./data/dag_db/mouja_dag.js"></script>
+<script src="./data/new_moja_line_poly_geo.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+<!-- <script src="./data/usstates.js"></script> -->
+<script>
+
+    /*===================================================
+                      OSM  LAYER               
+===================================================*/
+
+    var map = L.map('map').setView([22.3588, 90.3452], 13);
+    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    });
+    osm.addTo(map);
+
+    /*===================================================
+                          MARKER               
+    ===================================================*/
+    /* 
+        var singleMarker = L.marker([90, 0]);
+        singleMarker.addTo(map);
+        var popup = singleMarker.bindPopup('This is a popup')
+        popup.addTo(map); */
+
+    /*===================================================
+                         TILE LAYER               
+    ===================================================*/
+
+    var CartoDB_DarkMatter = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+    });
+    CartoDB_DarkMatter.addTo(map);
+
+    // Google Map Layer
+
+    googleStreets = L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    });
+    googleStreets.addTo(map);
+
+    // Satelite Layer
+    googleSat = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    });
+    googleSat.addTo(map);
+
+    var Stamen_Watercolor = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.{ext}', {
+        attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        subdomains: 'abcd',
+        minZoom: 1,
+        maxZoom: 16,
+        ext: 'jpg'
+    });
+    // console.log('Stamen_Watercolor ',Stamen_Watercolor);
+    // Stamen_Watercolor.addTo(map);
+
+
+    /*===================================================
+                          GEOJSON               
+    ===================================================*/
+    /* edit */
+    var arrayOfData = [];
+    /* edit */
+
+
+    var count = 0;
+    var bridgeCount = 0;
+
+    let xx = [];
+    let yy = [];
+    var x1 = 0;
+    var x2 = 0;
+    var y1 = 0;
+    var y2 = 0;
+    console.log('total length ', (fullItbariaJSON.features.length + lineGDBJSON.features.length) / 2);
+    var avgLength = (fullItbariaJSON.features.length + lineGDBJSON.features.length) / 2;
+
+    // var linedata = L.geoJSON(lineJSON).addTo(map);
+    // var linedata = L.geoJSON(itbariaPlotJSON).addTo(map);
+   
+
+
+    var pointdata = L.geoJSON(pointJSON).addTo(map);
+    // var nepalData = L.geoJSON(nepaldataa).addTo(map);
+    
+    // TO ADD POLYGON DATA SEE POLYGON DRAFT CODE
+
+
+    var polygondata = L.geoJSON([itbariaPolyJSON_1, moujaLinePoly], {
+        style: function () {
+
+            return {
+                color: 'red',
+
+            }
+        },
+        onEachFeature: function (feature, layer) {
+            layer.on({
+
+                click: zoomToFeature
+            });
+            // myObj.hasOwnProperty('key')
+            // feature.properties.TextString
+            if (feature.properties.hasOwnProperty('TextString')) {
+                layer.bindPopup('<b>Dag </b>' + feature.properties.TextString)
+                if ((feature.properties.TextString).trim() == 440) {
+                    map.setView([layer._bounds._northEast.lat, layer._bounds._northEast.lng], 20);
+                    layer.setStyle(
+                        {
+                            fillColor: 'blue',
+                            fillOpacity: 4,
+                            color: 'blue',
+                        }
+                    );
+
+                    // polygondata.resetStyle(this);
+                }
+
+            }
+
+            // console.log(...feature.geometry.coordinates);
+            // console.log(layer._bounds._northEast.lat);
+            // map.setView(marker.getLatLng(), 16);
+            /* xx.push(layer._bounds._northEast.lat)
+            xx.push(layer._bounds._southWest.lat)
+            yy.push(layer._bounds._northEast.lng)
+            yy.push(layer._bounds._southWest.lng)
+            count++;
+
+            // if (count === 3014) {
+            if (count === avgLength) {
+                x1 = Math.min(...xx);
+                x2 = Math.max(...xx);
+
+                y1 = Math.min(...yy);
+                y2 = Math.max(...yy);
+                // console.log([((y2 + y1) / 2), ((x2 + x1) / 2)]);
+                let zz = 180 / (y2 - y1) / 700;
+                map.setView([((x2 + x1) / 2), ((y2 + y1) / 2)], zz);
+                // map.options.maxZoom = 15;
+                // map.fitBounds(layer.getBounds());    
+
+
+                // console.log('xx max :', Math.max(...xx), ' xx min :', Math.min(...xx), ' yy max :', Math.max(...yy), ' yy min :', Math.min(...yy));
+            } */
+            // console.log(feature.properties.Color);
+            if (feature.properties.Color == '1') {
+                var zoom = layer.getBounds();
+                // layer.setStyle({ color: 'red' });
+
+            } else {
+                // layer.setStyle(
+                //     {
+                //         fillColor: 'red',
+                //         fillOpacity: 4,
+                //         color: 'green',
+                //     }
+                // );
+            }
+            // console.log(count);
+            layer.on('mouseover', function () {
+                this.setStyle({
+                    weight: 5,
+                    color: '#666',
+                    dashArray: '3',
+                    fillOpacity: 2,
+                    fillColor: '#E31A1C'
+                });
+            });
+            layer.on('mouseout', function (e) {
+                if (feature.properties.hasOwnProperty('TextString') && (this.feature.properties.TextString).trim() == 440) {
+                    layer.setStyle(
+                        {
+                            fillColor: 'blue',
+                            fillOpacity: 4,
+                            color: 'blue',
+                        }
+                    );
+                    console.log(e.target);
+                } else {
+                    polygondata.resetStyle(this);
+
+                }
+                // console.log('this ',(this.feature.properties.TextString).trim() == 440);
+            });
+
+        },
+        // style: {
+        //     fillColor: 'red',
+        //     fillOpacity: 1,
+        //     color: 'green',
+        // }
+
+
+    }).addTo(map);
+
+
+    // var saData = L.geoJSON([itbariaPlotJSON_1, itbariaPolyJSON_1, itbariaPlotJSON_2, itbariaPlotJSON_3, itbariaPolyJSON_3], {
+    var saData = L.geoJSON([itbariaPolyJSON_1,itbariaPolyJSON_3], {
+            style: function () {
+
+                return {
+                    color: 'blue',
+
+                }
+            },
+            onEachFeature: function (feature, layer) {
+                layer.on({
+                    click: zoomToFeature
+
+                });
+                // myObj.hasOwnProperty('key')
+                // feature.properties.TextString
+              
+                if (feature.properties.hasOwnProperty('dag')) {
+                    // console.log(' feature ',feature);
+
+                    layer.setStyle(
+                            {
+                                fillColor: '#BD0026',
+                                fillOpacity: .6,
+                                color: '#BD0026',
+                            }
+                        );
+                }
+                if (feature.properties.hasOwnProperty('TextString')) {
+
+                    layer.bindPopup('<b>Dag </b>' + feature.properties.TextString)
+                    if ((feature.properties.TextString).trim() == 435) {
+                        map.setView([layer._bounds._northEast.lat, layer._bounds._northEast.lng], 20);
+                        layer.setStyle(
+                            {
+                                fillColor: 'blue',
+                                fillOpacity: 4,
+                                color: 'blue',
+                            }
+                        );
+
+                        // polygondata.resetStyle(this);
+                    }
+
+                }
+
+
+                coords = feature.geometry.coordinates;
+                first = coords[0];
+                last = coords[coords.length - 1];
+                // console.log('first ',first,' last ',last);
+                if (feature.geometry.type === "LineString" && first[0] === last[0] && first[1] === last[1]) {
+
+                    layer.setStyle(
+                        {
+                            fillColor: 'black',
+                            fillOpacity: 4,
+                            color: 'black',
+                        }
+                    );
+
+                    /*   console.log('before ',feature.geometry.type);
+      
+                      feature.geometry.type='Polygon';
+      
+                      console.log('after ',feature.geometry.type); */
+
+                }
+
+                // console.log(...feature.geometry.coordinates);
+                // console.log(layer._bounds._northEast.lat);
+                // map.setView(marker.getLatLng(), 16);
+
+                /*  xx.push(layer._bounds._northEast.lat)
+                 xx.push(layer._bounds._southWest.lat)
+                 yy.push(layer._bounds._northEast.lng)
+                 yy.push(layer._bounds._southWest.lng)
+                 count++;
+     
+                 if (count === 3014) {
+                     x1 = Math.min(...xx);
+                     x2 = Math.max(...xx);
+     
+                     y1 = Math.min(...yy);
+                     y2 = Math.max(...yy);
+                     // console.log([((y2 + y1) / 2), ((x2 + x1) / 2)]);
+                     let zz = 180 / (y2 - y1) / 700;
+                     map.setView([((x2 + x1) / 2), ((y2 + y1) / 2)], zz);
+                     // map.options.maxZoom = 15;
+                     // map.fitBounds(layer.getBounds());    
+     
+     
+                     // console.log('xx max :', Math.max(...xx), ' xx min :', Math.min(...xx), ' yy max :', Math.max(...yy), ' yy min :', Math.min(...yy));
+                 } */
+
+
+
+                layer.on('mouseover', function () {
+                  
+                    // layer.bindPopup('<b>id </b>' + feature.id)
+                    if((this.feature.id )!==1922){
+                        // console.log('this ',this);
+                            this.setStyle({
+                            weight: 5,
+                            // color: '#666',
+                            color: 'black',
+                            dashArray: '',
+                            fillOpacity: 0.4,
+                            fillColor: '#E31A1C'
+                        });
+                    }
+                    
+                   
+                });
+                layer.on('mouseout', function (e) {
+                    if(this.feature.id !==1922){
+                        if (feature.properties.hasOwnProperty('TextString') && (this.feature.properties.TextString).trim() == 440) {
+                        layer.setStyle(
+                            {
+                                fillColor: 'blue',
+                                fillOpacity: 4,
+                                color: 'blue',
+                            }
+                        );
+
+                    } else {
+                        saData.resetStyle(this);
+
+                    }
+                    }
+                    
+                });
+
+            },
+            // style: {
+            //     fillColor: 'red',
+            //     fillOpacity: 1,
+            //     color: 'green',
+            // }
+
+
+        }).addTo(map);
+
+    var linedata = L.geoJSON([itbariaPlotJSON_1,itbariaPlotJSON_2,itbariaPlotJSON_3], {
+            style: function () {
+                return {
+                    color: 'yellow',
+                }
+            },
+            onEachFeature: function (feature, layer) {
+                layer.on({
+                    click: zoomToFeature
+                });
+
+                if (feature.properties.hasOwnProperty('TextString')) {
+                    layer.bindPopup('<b>Dag </b>' + feature.properties.TextString)
+                    if ((feature.properties.TextString).trim() == 435) {
+                        map.setView([layer._bounds._northEast.lat, layer._bounds._northEast.lng], 20);
+                        layer.setStyle(
+                            {
+                                fillColor: 'blue',
+                                fillOpacity: 4,
+                                color: 'blue',
+                            }
+                        );
+
+                    }
+
+                }
+
+                coords = feature.geometry.coordinates;
+                first = coords[0];
+                last = coords[coords.length - 1];
+            
+                if (feature.geometry.type === "LineString" && first[0] === last[0] && first[1] === last[1]) {
+                    layer.setStyle(
+                        {
+                            fillColor: 'black',
+                            fillOpacity: 4,
+                            color: 'black',
+                        }
+                    );
+                    /*   console.log('before ',feature.geometry.type);
+      
+                      feature.geometry.type='Polygon';
+      
+                      console.log('after ',feature.geometry.type); */
+                }
+
+                /*  xx.push(layer._bounds._northEast.lat)
+                 xx.push(layer._bounds._southWest.lat)
+                 yy.push(layer._bounds._northEast.lng)
+                 yy.push(layer._bounds._southWest.lng)
+                 count++;
+     
+                 if (count === 3014) {
+                     x1 = Math.min(...xx);
+                     x2 = Math.max(...xx);
+     
+                     y1 = Math.min(...yy);
+                     y2 = Math.max(...yy);
+                     // console.log([((y2 + y1) / 2), ((x2 + x1) / 2)]);
+                     let zz = 180 / (y2 - y1) / 700;
+                     map.setView([((x2 + x1) / 2), ((y2 + y1) / 2)], zz);
+                     // map.options.maxZoom = 15;
+                     // map.fitBounds(layer.getBounds());    
+     
+     
+                     // console.log('xx max :', Math.max(...xx), ' xx min :', Math.min(...xx), ' yy max :', Math.max(...yy), ' yy min :', Math.min(...yy));
+                 } */
+
+                layer.on('click', function () {
+                    // console.log(this);
+                    this.setStyle({
+                        weight: 5,
+                        // color: '#666',
+                        color: 'white',
+                        dashArray: '',
+                        fillOpacity: 0.4,
+                        fillColor: '#FED976'
+                    });
+                });
+                layer.on('mouseout', function (e) {
+                    if (feature.properties.hasOwnProperty('TextString') && (this.feature.properties.TextString).trim() == 440) {
+                        layer.setStyle(
+                            {
+                                fillColor: 'blue',
+                                fillOpacity: 4,
+                                color: 'blue',
+                            }
+                        );
+
+                    } else {
+                        linedata.resetStyle(this);
+
+                    }
+                });
+
+            },
+            // style: {
+            //     fillColor: 'red',
+            //     fillOpacity: 1,
+            //     color: 'green',
+            // }
+
+        }).addTo(map);
+
+
+    var lineGdb = L.geoJSON([moujaDag], {
+            style: function () {
+                return {
+                    color: '#FD8D3C',
+                }
+            },
+            onEachFeature: function (feature, layer) {
+                layer.on({
+                    click: zoomToFeature
+                });
+
+                if (feature.properties.hasOwnProperty('TextString')) {
+                    layer.bindPopup('<b>Dag </b>' + feature.properties.TextString)
+                    if ((feature.properties.TextString).trim() == 435) {
+                        map.setView([layer._bounds._northEast.lat, layer._bounds._northEast.lng], 20);
+                        layer.setStyle(
+                            {
+                                fillColor: '#FD8D3C',
+                                fillOpacity: 4,
+                                color: '#FD8D3C',
+                            }
+                        );
+
+                    }
+
+                }
+
+            }
+        })  
+        // map.on('click', function(e) {
+              
+        //     var popLocation= e.latlng;
+        //     var popup = L.popup()
+        //     .setLatLng(popLocation)
+        //     // .setContent('<p>Hello world!<br />This is a nice popup.</p>')
+        //     .setContent(`<div style='color:black;'>${popLocation}</div>`)
+        //     .openOn(map);        
+        // });
+    
+   
+
+    /*===================================================
+                          LAYER CONTROL               
+    ===================================================*/
+
+    var baseLayers = {
+        "Satellite": googleSat,
+        "Google Map": googleStreets,
+        // "Water Color": Stamen_Watercolor,
+        "OpenStreetMap": osm,
+    };
+
+    var overlays = {
+
+        "PointData": pointdata,
+        "LineData": linedata,
+        "PolygonData": polygondata,
+        "SA-Data": saData,
+        'lineGdb':lineGdb
+    };
+
+    L.control.layers(baseLayers, overlays).addTo(map);
+
+
+    /*===================================================
+                          SEARCH BUTTON               
+    ===================================================*/
+
+    L.Control.geocoder().addTo(map);
+
+
+    /*===================================================
+                          Choropleth Map               
+    ===================================================*/
+
+    // L.geoJSON(statesData).addTo(map);
+
+
+    function getColor(d) {
+        console.log('d ', d > 5);
+        // return d > 1000 ? '#800026' :
+        //     d > 500 ? '#BD0026' :
+        //         d > 200 ? '#E31A1C' :
+        //             d > 100 ? '#FC4E2A' :
+        //                 d > 50 ? '#FD8D3C' :
+        //                     d > 20 ? '#FEB24C' :
+        //                         d > 10 ? '#FED976' :
+        //                             '#FFEDA0';
+        return d > 5 ? '#800026' :
+            d > 10 ? '#BD0026' : '#FFEDA0';
+        /*  d > 200 ? '#E31A1C' :
+             d > 100 ? '#FC4E2A' :
+                 d > 50 ? '#FD8D3C' :
+                     d > 20 ? '#FEB24C' :
+                         d > 10 ? '#FED976' : */
+
+    }
+
+    function style(feature) {
+        // console.log(feature.properties.Color);
+        console.log(' getColor(feature.properties.Color)', getColor(feature.properties.Color));
+        return {
+            // fillColor: getColor(feature.properties.density),
+            fillColor: getColor(feature.properties.Color),
+            weight: 2,
+            opacity: 1,
+            color: 'white',
+            dashArray: '3',
+            fillOpacity: 0.7
+        };
+    }
+
+    // L.geoJson(statesData, { style: style }).addTo(map);
+
+    function highlightFeature(e) {
+        var layer = e.target;
+        layer.setStyle({
+            weight: 5,
+            color: '#666',
+            dashArray: '',
+            fillOpacity: 0.7
+        });
+
+        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+            layer.bringToFront();
+        }
+
+        info.update(layer.feature.properties);
+    }
+
+    function resetHighlight(e) {
+        geojson.resetStyle(e.target);
+        info.update();
+    }
+
+    var geojson;
+    // ... our listeners
+    // geojson = L.geoJson(statesData);
+    // geojson = L.geoJson(polygonJSON);
+
+    function zoomToFeature(e) {
+        map.fitBounds(e.target.getBounds());
+        /* console.log(e);
+        this.setStyle({
+                    weight: 5,
+                    // color: '#666',
+                    color: 'black',
+                    dashArray: '3',
+                    fillOpacity: 5,
+                    fillColor: '#E31A1C'
+                }); */
+    }
+
+    function onEachFeature(feature, layer) {
+        layer.on({
+            mouseover: highlightFeature,
+            mouseout: resetHighlight,
+            click: zoomToFeature
+        });
+    }
+
+    // geojson = L.geoJson(statesData, {
+    //     style: style,
+    //     onEachFeature: onEachFeature
+    // }).addTo(map);
+
+    var info = L.control();
+
+    info.onAdd = function (map) {
+        this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+        this.update();
+        return this._div;
+    };
+
+    // method that we will use to update the control based on feature properties passed
+    info.update = function (props) {
+        this._div.innerHTML = '<h4>US Population Density</h4>' + (props ?
+            '<b>' + props.Layer + '</b><br />' + props.Color + ' people / mi<sup>2</sup>'
+            : 'Hover over a state');
+    };
+
+    // info.addTo(map);
+
+    var legend = L.control({ position: 'bottomright' });
+
+    legend.onAdd = function (map) {
+
+        var div = L.DomUtil.create('div', 'info legend'),
+            grades = [0, 10, 20, 50, 100, 200, 500, 1000],
+            labels = [];
+
+        // loop through our density intervals and generate a label with a colored square for each interval
+        for (var i = 0; i < grades.length; i++) {
+            div.innerHTML +=
+                '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+                grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+        }
+
+        return div;
+    };
+
+    // legend.addTo(map);
+
+
+</script>
